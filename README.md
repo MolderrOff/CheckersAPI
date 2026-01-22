@@ -18,7 +18,8 @@ cake_189f.dll (The core engine library)
 (Note: Ensure the cake.ini file's internal egdb_path points to your DB folder.)
 Database Folder (C:\Checkers\DB\):
 All required database files (e.g., .wld, .tbl files).
-2. Configure appsettings.json
+"Please download the databases from the following page: edgilbert.org/EnglishCheckers/KingsRowEnglish.htm. You will need the files titled 'Kingsrow English 2 through 8 pieces WLD'."
+3. Configure appsettings.json
 Update the paths in the appsettings.json file of the main CheckersBot project to match the locations where you placed the files in Step 1.
 -------------------
 json
