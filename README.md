@@ -49,7 +49,7 @@ The application will start, launch two KingsrowWorker.exe processes in the backg
 --------------------
 API Endpoints
 The API includes the following endpoints documented via Swagger:
-
+--------------------
 Endpoint/	Description/	Status Codes:
 POST /api/Checkers/suggest	Get the best move suggestion based on a position and level.	200 OK, 422 Invalid PDN, 504 Timeout
 POST /api/Checkers/validate	Check if a specific move is legal in a position.	200 OK
