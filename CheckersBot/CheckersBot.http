@@ -1,0 +1,6 @@
+@CheckersBot_HostAddress = http://localhost:5119
+
+GET {{CheckersBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

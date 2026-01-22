@@ -1,0 +1,44 @@
+[
+  {
+    "ContainingType": "CheckersBot.Controllers.CheckersController",
+    "Method": "SuggestMove",
+    "RelativePath": "api/Checkers/suggest",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CheckersBot.Models.SuggestRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CheckersBot.Controllers.CheckersController",
+    "Method": "ValidateMove",
+    "RelativePath": "api/Checkers/validate",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CheckersBot.Models.ValidateRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CheckersBot.Controllers.CheckersController",
+    "Method": "HealthCheck",
+    "RelativePath": "healthz",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

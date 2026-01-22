@@ -1,0 +1,4 @@
+[Endgame Database]
+Path=C:\kr_english_wld
+MaxPieces=8
+CacheSize=128
