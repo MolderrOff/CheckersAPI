@@ -13,7 +13,6 @@ builder.Services.AddMemoryCache(options => {
 });
 builder.Services.AddControllers();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -27,10 +26,6 @@ builder.Services.AddScoped<LogActionFilter>();
 builder.WebHost.UseUrls("http://0.0.0.0:5119", "https://0.0.0.0:7224");
 
 var app = builder.Build();
-//using (var scope = app.Services.CreateScope())
-//{
-//    scope.ServiceProvider.GetRequiredService<EnginePoolService>();
-//}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

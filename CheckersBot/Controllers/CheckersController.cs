@@ -18,15 +18,13 @@ public class CheckersController : ControllerBase
         _pool = pool;
         _cache = cache;
     }  
-    //POST /v1/move/suggest
+  
     [HttpPost("/v1/move/suggest")]
     public async Task<IActionResult> SuggestMove([FromBody] SuggestRequest request)
     {
-        // Проверка на null самого request и его вложенных объектов
         if (request?.Limits == null)
             return BadRequest(new { error = "Limits are required" });
 
-        // Используем значение по умолчанию, если HardTimeMs не задан, чтобы не упасть
         int hardLimit = request.Limits.HardTimeMs > 0 ? request.Limits.HardTimeMs : 5000;
 
         using var cts = new CancellationTokenSource(hardLimit);
@@ -34,7 +32,7 @@ public class CheckersController : ControllerBase
         cts.Token.ThrowIfCancellationRequested();
 
         if (request?.State?.Position == null || string.IsNullOrEmpty(request.State.Position))
-            return UnprocessableEntity(new { error = "Invalid PDN" }); // 422
+            return UnprocessableEntity(new { error = "Invalid PDN" }); 
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -49,14 +47,13 @@ public class CheckersController : ControllerBase
 
             var logEntry = new
             {
-                requestId = HttpContext.TraceIdentifier, // Уникальный ID запроса
+                requestId = HttpContext.TraceIdentifier, 
                 timeMs = result.Info.TimeMs,
                 depth = result.Depth,
                 nodes = result.Nodes,
                 tablebaseHit = result.Info.TablebaseHit
             };
 
-            // Выводим в консоль как одну JSON-строку
            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(logEntry));            
 
             return Ok(result);
@@ -73,20 +70,28 @@ public class CheckersController : ControllerBase
             return StatusCode(500, ex.Message);
         }        
     }
-    //POST /v1/move/validate
+    
     [HttpPost("/v1/move/validate")]
     public async Task<IActionResult> ValidateMove([FromBody] ValidateRequest request)
     {
         try
         {
             var worker = _pool.GetNextWorker();
-            int color = request.Position.Trim().StartsWith("B", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
 
-            // Отправляем новую команду воркеру
+            int color = 1;
+            if (!string.IsNullOrWhiteSpace(request?.Position))
+            {
+                color = request.Position.Trim().StartsWith("B", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
+            }
+            else
+            {
+                return BadRequest(new { error = "Position string is missing or invalid" });
+            }
+
             string command = $"validate_move|{request.Position}|{request.Move}|{color}";
             string response = await worker.SendCommandAsync(command, HttpContext.RequestAborted);
 
-            // Парсим ответ (ожидаем "RAW_RESULT:|true" или "RAW_RESULT:|false")
+            
             bool isValid = response.Contains("true");
 
             return Ok(new { legal = isValid });
@@ -95,25 +100,7 @@ public class CheckersController : ControllerBase
         {
             return StatusCode(500, new { error = "Validation service unavailable" });
         }
-        //var worker = _pool.GetNextWorker();
-
-        //string fen = request.Position.Trim();
-        //string raw = await worker.GetBestMoveDirectAsync(fen, 500, "weak", HttpContext.RequestAborted);
-
-        //// 1. Проверяем, не совпадает ли ход пользователя с BestMove из JSON
-        //// (так как твой GetBestMoveDirectAsync теперь возвращает JSON-строку)
-        //bool isLegal = raw.Contains($"\"bestMove\":\"{request.Move}\"")
-        //            || raw.Contains($"\"{request.Move}\""); // Ищем в PV
-
-        //// 2. Если движок использует дефисы вместо крестиков (14-23 вместо 14x23)
-        //if (!isLegal)
-        //{
-        //    string alternativeMove = request.Move.Replace("x", "-");
-        //    isLegal = raw.Contains(alternativeMove);
-        //}
-
-
-        //return Ok(new { legal =  isLegal });
+       
     }
     [HttpGet("/healthz")]
     public IActionResult HealthCheck()
@@ -121,8 +108,8 @@ public class CheckersController : ControllerBase
         var count = _pool.GetAliveWorkersCount();        
         return Ok(new {
             ok = count == 2,
-            workers  = count,
-            timestamp = DateTime.UtcNow
+            workers  = count
+            //, timestamp = DateTime.UtcNow
         });
     }
 

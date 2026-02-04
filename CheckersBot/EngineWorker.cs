@@ -41,26 +41,23 @@ public class EngineWorker : IDisposable
             _process.Start();
             _process.BeginErrorReadLine();
             System.Diagnostics.Debug.WriteLine("Worker warming up...");
-            // ПРОГРЕВ: Отправляем стандартную начальную позицию
+         
             string warmUpFen = "W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12";
 
-            // Даем 500мс на инициализацию баз и хеша
             _process.StandardInput.WriteLine($"{warmUpFen}|1|0.5");
             _process.StandardInput.Flush();
 
-            // 2. Ждем ответа RAW_RESULT. Это заставит конструктор "подвиснуть" 
-            // до тех пор, пока Kingsrow реально не загрузит базы.
             while (true)
             {
                 string line = _process.StandardOutput.ReadLine();
                 if (line == null) break;
-                if (line.Contains("RAW_RESULT:|")) break; // Базы загружены, движок ответил
+                if (line.Contains("RAW_RESULT:|")) break; 
             }
             System.Diagnostics.Debug.WriteLine("Worker FULLY warmed up and ready.");
         }
         catch (Exception ex)
         {
-            throw new Exception($"Не удалось запустить KingsrowWorker.exe по пути {exePath}. Ошибка: {ex.Message}");
+            throw new Exception($"Failed to start KingsrowWorker.exe from path {exePath}. Error: {ex.Message}");
         }
 
         Console.WriteLine($"Worker started");
@@ -69,22 +66,17 @@ public class EngineWorker : IDisposable
    
     public async Task<string> GetBestMoveDirectAsync(string fen, int timeMs, string level = "medium", CancellationToken ct = default)
     {
-        Console.WriteLine($"[Worker {this.GetHashCode()}] Ожидаю семафор...");
+        Console.WriteLine($"[Worker {this.GetHashCode()}] Waiting for the semaphore...");
         await _lock.WaitAsync(ct).ConfigureAwait(false);
-        //CancellationTokenRegistration? registration = null;
-
-
+      
         var fullOutput = new StringBuilder();
         try
         {
-            Console.WriteLine($"[Worker {this.GetHashCode()}] СЕМАФОР ЗАХВАЧЕН. Начинаю расчет.");
+            Console.WriteLine($"[Worker {this.GetHashCode()}] SEMAPHORE CAPTURED. Counting begins.");
 
             ct.ThrowIfCancellationRequested();
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             
-
-
-            // Регистрируем колбэк: если токен отменяется, мы "убиваем" процесс KingsRow.
             using var registration = ct.Register(() =>
             {
                 if (!IsExited)
@@ -137,100 +129,21 @@ public class EngineWorker : IDisposable
         }
         catch (OperationCanceledException e)
         {
-             System.Diagnostics.Debug.WriteLine("Таймаут поиска. Возвращаем частичный результат.");
+             System.Diagnostics.Debug.WriteLine("Search timed out. Returning partial results..");
              throw;
         }
         catch (Exception e) 
         {
-            Console.WriteLine("Просто исключение" + e.StackTrace); // Посмотри StackTrace
-            Console.WriteLine($"Ошибка движка: {e.Message}");                                 // Возможно, здесь тебе тоже нужно бросить или обработать ошибку
-
+            Console.WriteLine("Just an exception" + e.StackTrace); 
+            Console.WriteLine($"Engine error: {e.Message}");      
         }
         finally
         {
-            Console.WriteLine($"[Worker {this.GetHashCode()}] СЕМАФОР ОСВОБОЖДЕН.");
+            Console.WriteLine($"[Worker {this.GetHashCode()}] SEMAPHORE CLEARED.");
             _lock.Release();
-            //registration?.Dispose();
         }
-        return fullOutput.ToString();
-        //finally
-        //{
-        //    registration?.Dispose();
-
-        //    // Сначала сохраняем состояние, чтобы не обращаться к _process после пересоздания
-        //    bool needsRestart = false;
-
-        //    try
-        //    {
-        //        // Проверяем на null и на завершение
-        //        if (_process == null || _process.HasExited || ct.IsCancellationRequested || linkedCts.IsCancellationRequested)
-        //        {
-        //            needsRestart = true;
-        //        }
-        //    }
-        //    catch (InvalidOperationException)
-        //    {
-        //        // Если процесс уже "рассыпался", значит точно нужен рестарт
-        //        needsRestart = true;
-        //    }
-
-        //    if (needsRestart)
-        //    {
-        //        System.Diagnostics.Debug.WriteLine("Restarting engine process...");
-        //        SetupProcess();
-        //    }
-
-        //    _lock.Release();
-        //}
-
-    }
-    private void SetupProcess()
-    {
-        var newProcess = new Process();
-        newProcess.StartInfo = new ProcessStartInfo
-        {
-            FileName = "C:\\Projects\\KingsrowWorker\\bin\\x64\\Debug\\net9.0\\KingsrowWorker.exe", // Подставьте ваш путь
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            CreateNoWindow = true,
-            WorkingDirectory = "C:\\Projects\\KingsrowWorker\\bin\\x64\\Debug\\net9.0"
-        };
-
-        try
-        {        
-            newProcess.Start();
-
-            string line;
-            int maxLines = 50;
-
-            while (maxLines-- > 0 && (line = newProcess.StandardOutput.ReadLine()) != null)
-            {
-                System.Diagnostics.Debug.WriteLine($"BOOT: {line}");
-                if (line.Trim() == "READY") break;
-            }
-
-            Thread.Sleep(50);
-
-            var oldProcess = _process;
-            _process = newProcess;
-
-            if (oldProcess != null)
-            {
-                try 
-                {
-                    if (!oldProcess.HasExited) oldProcess.Kill();
-                } 
-                catch { }
-                oldProcess.Dispose();
-            }          
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"CRITICAL ERROR STARTING ENGINE: {ex.Message}");
-            throw;
-        }
-    }
+        return fullOutput.ToString();       
+    }   
     public async Task<string> SendCommandAsync(string cmd, CancellationToken ct)
     {
         await _lock.WaitAsync(ct).ConfigureAwait(false);
@@ -250,13 +163,12 @@ public class EngineWorker : IDisposable
     }
     public void Dispose()
     {
-        // Сначала пытаемся корректно завершить процесс
         if (!IsExited)
         {
             try
             {
                 _process.Kill(true);
-                _process.WaitForExit(1000); // Ждем 1 секунду на завершение
+                _process.WaitForExit(1000); 
             }
             catch (Exception ex)
             {

@@ -29,30 +29,24 @@ public class ChinookAdapter
         if (request?.State?.Position == null) throw new Exception("Invalid position");
         string fen = ExtractFen(request.State.Position);
 
-        //-------------------Тест кэша
-        // 1. Генерируем ключ
-        string canonicalKey = NormalizePdn(fen); // Ваша функция сортировки
+        string canonicalKey = NormalizePdn(fen); 
         string level = request.Level ?? "medium";
         string fullCacheKey = $"move_{level}_{canonicalKey}";
 
-        // ТОЧКА 1: Проверка входа в метод
         Console.WriteLine($"--- NEW REQUEST: {fen} ---");
 
-        // 2. ПРОВЕРКА КЭША
         if (_memoryCache.TryGetValue(fullCacheKey, out EngineResponse cachedResponse))
         {
-            // ТОЧКА 2: Успешное попадание в кэш
-            Console.WriteLine(">>> CACHE HIT: Возвращаю данные из памяти.");
-            cachedResponse.Info.TimeMs = 0; //для теста
+            Console.WriteLine(">>> CACHE HIT: Returning data from memory.");
+            cachedResponse.Info.TimeMs = 0;
             return cachedResponse;
         }
         else
         { 
             await SetPositionAsync(request.State.Position, ct).ConfigureAwait(false);
         }
-        // ТОЧКА 3: Промах кэша
-        Console.WriteLine(">>> CACHE MISS: В кэше пусто, иду к движку...");
-        //-------------------Тест кэша
+        Console.WriteLine(">>> CACHE MISS: The cache is empty, I'm going to the engine...");
+        
 
         int pieces = CountPieces(fen);
         var sw = Stopwatch.StartNew();
@@ -65,7 +59,7 @@ public class ChinookAdapter
         string raw;
 
         bool isTablebase = false;
-        Console.WriteLine("DEBUG: Рою землю, запускаю движок Chinook...");
+        Console.WriteLine("DEBUG: I'm starting the engine Chinook...");
 
         if (pieces <= 8)
         {
@@ -77,19 +71,16 @@ public class ChinookAdapter
             raw = await _worker.GetBestMoveDirectAsync(fen, targetTime, request.Level ?? "medium", ct).ConfigureAwait(false);
         }
 
-        //Для отладки
         Console.WriteLine($"DEBUG FROM WORKER1: {raw}");
         if (string.IsNullOrEmpty(raw) || !raw.Contains("RAW_RESULT:|"))
         {
             string debugOutput = raw?.Replace("\r", " ").Replace("\n", " ") ?? "NULL";
             throw new Exception($"DEBUG_FULL_OUTPUT: [{debugOutput}]");
         }
-
-        //Для отладки
+        
         sw.Stop();
 
         var response = ParseKingsRowOutput(raw);
-
 
         response.Engine = "chinook";
         response.PositionKey = $"pdn:{fen}";
@@ -108,11 +99,10 @@ public class ChinookAdapter
 
         if (string.IsNullOrEmpty(response.BestMove))
         {
-            // Если движок не вернул ход (например, при "Cake claims a loss"), 
-            // пробуем достать любой легальный ход через команду воркеру
+            
             var legalMovesRaw = await _worker.SendCommandAsync($"getallmoves {fen}", ct).ConfigureAwait(false);
 
-            // Берем первый попавшийся ход из ответа воркера
+           
             var match = Regex.Match(legalMovesRaw, @"(\d+[-x]\d+)");
             if (match.Success)
             {
@@ -121,13 +111,11 @@ public class ChinookAdapter
             }
             else
             {
-                // Если ходов действительно нет (реальный пат или мат)
-                //throw new Exception($"Engine failed: No legal moves possible in this position. Raw: '{raw}'");
                 return new EngineResponse
                 {
                     BestMove = null,
                     Pv = new List<string>(),
-                    ScoreOrWDL = -2000, // Условный счет проигрыша
+                    ScoreOrWDL = -2000, 
                     Info = new EngineInfo { TimeMs = sw.ElapsedMilliseconds }
                 };
             }
@@ -135,25 +123,17 @@ public class ChinookAdapter
 
         response.Info.TimeMs = sw.ElapsedMilliseconds;
 
-        //TEST!!!!!!!!!!!!!11
         bool moveIsLegal = !string.IsNullOrEmpty(response.BestMove);
-        //TEST!!!!!!!!!!!!!
-
-
-        // 2. Если PV пустой, заполняем его хотя бы лучшим ходом
+        
         if (response.Pv == null || response.Pv.Count == 0)
         {
             response.Pv = new List<string> { response.BestMove };
         }
-              
-
-        // 4. ПРОВЕРКА ЛЕГАЛЬНОСТИ ХОДА
-   
+          
         moveIsLegal = await IsMoveLegal(fen, response.BestMove, ct);
 
         if (!moveIsLegal)
         {
-            // Пытаемся взять следующий ход из PV, если основной нелегален
             bool foundLegalFromPv = false;
             if (response.Pv != null && response.Pv.Count > 1)
             {
@@ -162,7 +142,7 @@ public class ChinookAdapter
                     if (await IsMoveLegal(fen, response.Pv[i], ct))
                     {
                         response.BestMove = response.Pv[i];
-                        // Обрезаем PV, чтобы он начинался с нового лучшего хода
+                        
                         response.Pv = response.Pv.Skip(i).ToList();
                         foundLegalFromPv = true;
                         break;
@@ -170,21 +150,17 @@ public class ChinookAdapter
                 }
             }
 
-            // Если даже в PV нет легальных ходов — возвращаем 500 (через Exception)
             if (!foundLegalFromPv)
             {
                 throw new Exception("Engine returned an illegal move and no legal alternatives found in PV.");
-                // В контроллере это должно превратиться в статус 500
             }
         }
 
-        // 3. Корректируем глубину, если она не распарсилась (равна 0)
         if (response.Depth == 0)
         {
             response.Depth = response.Info.TablebaseHit ? 0 : targetDepth;
         }
 
-        // 4. СТРОГОЕ СОБЛЮДЕНИЕ ТЗ для уровней (косметическая правка глубины)
         if (request.Level == "weak" && response.Depth > 8) response.Depth = 8;
         if (request.Level == "strong" && pieces > 8 && response.Depth > 18) response.Depth = 18;
 
@@ -195,16 +171,13 @@ public class ChinookAdapter
 
         response.Info.TablebaseHit = (pieces <= 8);
 
-
-        //-------------------Тест кэша
         var cacheOptions = new MemoryCacheEntryOptions()
             .SetAbsoluteExpiration(TimeSpan.FromMinutes(15))
-            .SetSize(1); // Каждая позиция занимает 1 условную единицу объема
+            .SetSize(1); 
 
         _memoryCache.Set(fullCacheKey, response, cacheOptions);
-        Console.WriteLine(">>> CACHE SAVE: Результат записан в кэш на 15 мин.");
-        //-------------------Тест кэша
-
+        Console.WriteLine(">>> CACHE SAVE: The result is written to the cache for 15 minutes..");
+     
         return response;
     }
     private (int depth, int moveTime) GetLimitsByLevel(string? level, int maxDepth, int softTimeMs)
@@ -219,9 +192,7 @@ public class ChinookAdapter
     }
     private int CountPieces(string fen)
     {
-        //return fen.Split(' ')[0].Count(char.IsLetter);
         if (string.IsNullOrEmpty(fen)) return 0;
-        // Считаем все числа (номера полей с фигурами)
         return Regex.Matches(fen, @"\d+").Count;
     }
 
@@ -253,7 +224,6 @@ public class ChinookAdapter
 
         try
         {
-            // 1. Ищем начало и конец JSON в куче мусора (READY, DB Lookup и т.д.)
             int start = raw.IndexOf('{');
             int end = raw.LastIndexOf('}');
 
@@ -261,7 +231,6 @@ public class ChinookAdapter
             {
                 string jsonPart = raw.Substring(start, end - start + 1);
 
-                // 2. Десериализуем сразу весь объект
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var res = JsonSerializer.Deserialize<EngineResponse>(jsonPart, options);
 
@@ -270,10 +239,9 @@ public class ChinookAdapter
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("Ошибка десериализации JSON: " + ex.Message);
+            System.Diagnostics.Debug.WriteLine("Deserialization error JSON: " + ex.Message);
         }
 
-        // 3. Если JSON не нашелся или битый, используем твой старый Regex как запасной план
         var fallbackRes = new EngineResponse();
         var match = Regex.Match(raw, @"RAW_RESULT:\|.*?\|\s*(\d{1,2}[-x]\d{1,2})");
         if (match.Success)
@@ -288,22 +256,28 @@ public class ChinookAdapter
     {
         if (string.IsNullOrEmpty(fen)) return fen;
 
-        // Разделяем на части: Чей ход (W/B) и списки шашек
-        // Пример: W:W21,22,23:B1,2,3
         var parts = fen.Split(':');
         for (int i = 1; i < parts.Length; i++)
         {
-            var side = parts[i][0]; // W или B
-            var numbersPart = parts[i].Substring(1); // сами числа (21,22,23)
+            if (string.IsNullOrWhiteSpace(parts[i]) || parts[i].Length < 1) continue;
 
-            if (!string.IsNullOrEmpty(numbersPart))
+            string sidePrefix = parts[i][0].ToString();
+            
+            string piecesString = parts[i].Substring(1);
+
+            if (!string.IsNullOrEmpty(piecesString))
             {
-                var sortedNumbers = numbersPart.Split(',')
-                    .Select(int.Parse)
-                    .OrderBy(n => n)
-                    .Select(n => n.ToString());
+                var sortedPieces = piecesString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(token => {
+                       
+                        string numericPart = Regex.Replace(token, @"[^\d]", "");
+                        int.TryParse(numericPart, out int num);
+                        return new { Original = token, Value = num };
+                    })
+                    .OrderBy(x => x.Value)
+                    .Select(x => x.Original);
 
-                parts[i] = side + string.Join(",", sortedNumbers);
+                parts[i] = sidePrefix + string.Join(",", sortedPieces);
             }
         }
         return string.Join(":", parts);

@@ -29,7 +29,7 @@ public class EnginePoolService : IHostedService, IDisposable
             {
                 if (!File.Exists(exePath))
                 {
-                    throw new FileNotFoundException($"EXE не найден: {exePath}");
+                    throw new FileNotFoundException($"EXE not found: {exePath}");
                 }               
 
                 var worker = new EngineWorker(exePath, dbPath); 
@@ -45,7 +45,7 @@ public class EnginePoolService : IHostedService, IDisposable
         }
 
         if (_workers.Count == 0)
-            throw new Exception("Критическая ошибка: Не удалось запустить ни одного воркера Kingsrow!");
+            throw new Exception("Critical error: Failed to start any workers Kingsrow!");
 
         Console.WriteLine($"Pool initialized with {_workers.Count} workers.");
     }
@@ -60,12 +60,10 @@ public class EnginePoolService : IHostedService, IDisposable
             try
             {
                 var sw = Stopwatch.StartNew();
-                // 1. Прогрев поиска (начальная позиция)
+                
                 await worker.GetBestMoveDirectAsync("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12", 2000, "medium", cancellationToken);
                 Console.WriteLine($"[Worker {index}] Search warmed up in {sw.ElapsedMilliseconds}ms");
-
-                // 2. КРИТИЧНО: Прогрев Chinook DB (позиция с 8 фигурами)
-                // Это заставит DLL подгрузить файлы баз с диска прямо сейчас
+                
                 sw.Restart();
                 var dbResult = await worker.GetBestMoveDirectAsync("W:W21,22,23,24,25,26,27,28:B1", 2000, "strong", cancellationToken);
 
@@ -86,19 +84,7 @@ public class EnginePoolService : IHostedService, IDisposable
     public List<EngineWorker> Workers => _workers;
     public EngineWorker GetNextWorker()
     {
-        if (_workers.Count == 0) throw new Exception("Пул пуст");
-
-        //lock (_lock) 
-        //{
-        //--------для отладки
-        //var freeWorker = _workers
-        //    .Where(w => !w.IsExited && w.IsFree)
-        //    .FirstOrDefault();
-
-        //if (freeWorker != null) return freeWorker;
-        //--------для отладки
-
-
+        if (_workers.Count == 0) throw new Exception("Pool is empty");
 
         int index = Interlocked.Increment(ref _nextWorkerIndex);
             for (int i = 0; i < _workers.Count; i++)
@@ -106,12 +92,12 @@ public class EnginePoolService : IHostedService, IDisposable
                 var worker = _workers[(index + i) % _workers.Count];
                 if (!worker.IsExited)
                 {
-                    Console.WriteLine($"[POOL] Назначен {worker.GetHashCode()} (Индекс {(index + i) % _workers.Count})");
+                    Console.WriteLine($"[POOL] Appointed {worker.GetHashCode()} (Index {(index + i) % _workers.Count})");
                     return worker;
                 }                
             }
         //}
-        throw new Exception("Все воркеры Kingsrow завершили работу (Crash)!");
+        throw new Exception("All Kingsrow workers have completed their work (Crash)!");
     }
     public int GetAliveWorkersCount() => _workers.Count(w => !w.IsExited);
     public void Dispose()
