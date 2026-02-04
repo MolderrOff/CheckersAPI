@@ -18,7 +18,8 @@ cake_189f.dll (The core engine library)
 (Note: Ensure the cake.ini file's internal egdb_path points to your DB folder.)
 Database Folder (C:\Checkers\DB\):
 All required database files (e.g., .wld, .tbl files).
-2. Configure appsettings.json
+"Please download the databases from the following page: edgilbert.org/EnglishCheckers/KingsRowEnglish.htm. You will need the files titled 'Kingsrow English 2 through 8 pieces WLD'."
+3. Configure appsettings.json
 Update the paths in the appsettings.json file of the main CheckersBot project to match the locations where you placed the files in Step 1.
 -------------------
 json
@@ -49,7 +50,7 @@ The application will start, launch two KingsrowWorker.exe processes in the backg
 --------------------
 API Endpoints
 The API includes the following endpoints documented via Swagger:
-
+--------------------
 Endpoint/	Description/	Status Codes:
 POST /api/Checkers/suggest	Get the best move suggestion based on a position and level.	200 OK, 422 Invalid PDN, 504 Timeout
 POST /api/Checkers/validate	Check if a specific move is legal in a position.	200 OK
