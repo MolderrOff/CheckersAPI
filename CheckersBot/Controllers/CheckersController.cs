@@ -36,12 +36,20 @@ public class CheckersController : ControllerBase
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        if (string.IsNullOrWhiteSpace(request?.State?.Position) || !IsPdnValid(request.State.Position))
+        {
+            return StatusCode(422, new { error = "Unprocessable Entity: Invalid PDN format or duplicate pieces" });
+        }
+
         try
         {
             var worker = _pool.GetNextWorker();
             var adapter = new ChinookAdapter(worker, _cache);
 
             var result = await adapter.SearchAsync(request, linkedCts.Token);
+
+            if (linkedCts.IsCancellationRequested)
+                return StatusCode(504, new { error = "Engine timeout" });
 
             if (cts.IsCancellationRequested) throw new OperationCanceledException();
 
@@ -64,8 +72,13 @@ public class CheckersController : ControllerBase
         }
         catch (Exception ex)
         {
+            if (linkedCts.IsCancellationRequested)
+                return StatusCode(504, new { error = "Engine timeout", limit = request.Limits.HardTimeMs });
+            
             System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
-            if (ex is TaskCanceledException || ex.InnerException is OperationCanceledException)
+            
+            if (ex is TaskCanceledException || ex is OperationCanceledException ||
+                ex.InnerException is OperationCanceledException)
                 return StatusCode(504, "Engine timeout");
             return StatusCode(500, ex.Message);
         }        
@@ -112,5 +125,20 @@ public class CheckersController : ControllerBase
             //, timestamp = DateTime.UtcNow
         });
     }
+    private bool IsPdnValid(string pdn)
+    {
+        try
+        {
+            if (!pdn.Contains(":")) return false;
 
+            var matches = System.Text.RegularExpressions.Regex.Matches(pdn, @"\d+");
+            var squares = new HashSet<string>();
+            foreach (System.Text.RegularExpressions.Match m in matches)
+            {
+                if (!squares.Add(m.Value)) return false; 
+            }
+            return true;
+        }
+        catch { return false; }
+    }
 }
