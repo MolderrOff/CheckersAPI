@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "Новый профиль",
+    "Projects": [
+      {
+        "Path": "CheckersBot.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "..\\CheckersTestClient\\CheckersTestClient.csproj",
+        "Action": "Start",
+        "DebugTarget": "CheckersTestClient"
+      }
+    ]
+  }
+]

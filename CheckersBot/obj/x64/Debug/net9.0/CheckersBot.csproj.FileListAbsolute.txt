@@ -75,3 +75,4 @@ C:\Projects\CheckersBot\obj\x64\Debug\net9.0\CheckersBot.pdb
 C:\Projects\CheckersBot\obj\x64\Debug\net9.0\CheckersBot.genruntimeconfig.cache
 C:\Projects\CheckersBot\obj\x64\Debug\net9.0\ref\CheckersBot.dll
 C:\Projects\CheckersBot\bin\x64\Debug\net9.0\cake_189f.dll
+C:\Projects\CheckersBot\obj\x64\Debug\net9.0\CheckersBot.sourcelink.json

@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddSingleton<EnginePoolService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EnginePoolService>());
 builder.Services.AddMemoryCache(options => {
     options.SizeLimit = 10000;
 });
@@ -23,11 +24,13 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 builder.Services.AddScoped<LogActionFilter>();
 
+builder.WebHost.UseUrls("http://0.0.0.0:5119", "https://0.0.0.0:7224");
+
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
-{
-    scope.ServiceProvider.GetRequiredService<EnginePoolService>();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    scope.ServiceProvider.GetRequiredService<EnginePoolService>();
+//}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -42,5 +45,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    var pool = app.Services.GetRequiredService<EnginePoolService>();
+    pool.Dispose();
+});
 
 app.Run();

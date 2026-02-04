@@ -1,0 +1,16 @@
+[Bb]in/
+[Obj]/
+out/
+
+.vs/
+.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+*.log
+*.tmp
+cake.ini
+
+.env
+appsettings.Development.json
