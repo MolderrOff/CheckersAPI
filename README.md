@@ -22,6 +22,7 @@ All required database files (e.g., .wld, .tbl files).
 3. Configure appsettings.json
 Update the paths in the appsettings.json file of the main CheckersBot project to match the locations where you placed the files in Step 1.
 -------------------
+
 json
 {
   "Engine": {
@@ -41,20 +42,27 @@ json
     "DefaultHardTimeMs": 1200
   }
 }
+
 ---------------------
+
 How to Run
 Open the solution in Visual Studio 2022.
 Ensure the configuration is set to Debug or Release (as used during development).
 Run the project (F5 or click the play button).
 The application will start, launch two KingsrowWorker.exe processes in the background, and open the Swagger UI in your browser.
+
 --------------------
+
 API Endpoints
 The API includes the following endpoints documented via Swagger:
+
 --------------------
+
 Endpoint/	Description/	Status Codes:
 POST /api/Checkers/suggest	Get the best move suggestion based on a position and level.	200 OK, 422 Invalid PDN, 504 Timeout
 POST /api/Checkers/validate	Check if a specific move is legal in a position.	200 OK
 GET /healthz	Health check endpoint to confirm workers are running.	200 OK
+
 --------------------
 Example Request (suggest)
 json
