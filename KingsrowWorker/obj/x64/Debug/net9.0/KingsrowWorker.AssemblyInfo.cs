@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KingsrowWorker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a724a66c65cb735c629179d9df7c7f5637e09ef7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8cfe20d86e7cbb16cc2180e9657e2e3972516009")]
 [assembly: System.Reflection.AssemblyProductAttribute("KingsrowWorker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KingsrowWorker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

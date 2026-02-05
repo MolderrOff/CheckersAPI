@@ -1,0 +1,2 @@
+wwwroot\index.html
+C:\Projects\CheckersBot\wwwroot\index.html

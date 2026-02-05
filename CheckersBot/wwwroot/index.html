@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Checkers Engine Client</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+        }
+
+        .box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+            button:hover {
+                background: #218838;
+            }
+
+        pre {
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .status {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Checkers Engine Test Client</h2>
+
+    <div class="box">
+
+        <div class="status" id="serverStatus">Connecting to engine...</div>
+
+        <label class="label">Position (PDN):</label>
+        <textarea id="pdn">W:W25,28,29,30:B4,9,11</textarea>
+
+        <label class="label">Level:</label>
+        <select id="level">
+            <option value="weak">Weak</option>
+            <option value="medium" selected>Medium</option>
+            <option value="strong">Strong</option>
+        </select>
+
+        <p><button onclick="getSuggest()">Get Move Suggestion</button></p>
+    </div>
+
+    <div id="resultBox" class="box" style="display:none">
+        <label class="label">Response:</label>
+        <pre id="response"></pre>
+    </div>
+
+    <script>
+
+        document.getElementById('serverStatus').textContent = "Target Server: " + window.location.origin;
+
+        async function getSuggest() {
+            const baseUrl = window.location.origin;
+
+            const pdn = document.getElementById('pdn').value;
+            const level = document.getElementById('level').value;
+            const resDisplay = document.getElementById('response');
+            const resBox = document.getElementById('resultBox');
+
+            resBox.style.display = 'block';
+            resDisplay.textContent = "Processing move...";
+
+            const payload = {
+                gameId: "checkers-8x8",
+                state: { notation: "PDN", position: pdn },
+                level: level,
+                limits: { maxDepth: 12, softTimeMs: 250, hardTimeMs: 1200 }
+            };
+
+            try {
+                const response = await fetch(`${baseUrl}/v1/move/suggest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                resDisplay.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resDisplay.textContent = "Error: " + error.message +
+                    "\n\nMake sure the server is running and CORS is enabled in Program.cs!";
+            }
+        }
+    </script>
+</body>
+</html>
