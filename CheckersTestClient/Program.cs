@@ -255,7 +255,6 @@ class Program
                     Console.ForegroundColor = isLegal ? ConsoleColor.Green : ConsoleColor.Red;
                     Console.WriteLine($"\nRESULT: Move is {(isLegal ? "LEGAL" : "ILLEGAL")}");
 
-                    // Если есть причина (на случай illegal), выводим и её
                     if (root.TryGetProperty("reason", out var reasonProp))
                     {
                         Console.WriteLine($"Reason: {reasonProp.GetString()}");
@@ -264,7 +263,6 @@ class Program
                 }
                 else
                 {
-                    // Если вдруг пришло что-то другое, просто печатаем JSON
                     Console.WriteLine("\n--- RAW RESPONSE ---");
                     Console.WriteLine(raw);
                 }
@@ -272,6 +270,7 @@ class Program
         }
         catch (Exception ex) { HandleConnectionError(ex); }
     }
+
     static async Task CheckHealth(HttpClient client)
     {
         try
@@ -291,7 +290,6 @@ class Program
 
     static void HandleConnectionError(Exception ex)
     {
-        // 10061 is the socket error code for "Connection Refused"
         if (ex.ToString().Contains("10061") || ex.Message.Contains("connection refused") || ex.Message.Contains("отверг подключение"))
         {
             Console.ForegroundColor = ConsoleColor.Yellow;

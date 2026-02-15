@@ -79,4 +79,4 @@ C:\Projects\CheckersBot\obj\x64\Debug\net9.0\CheckersBot.sourcelink.json
 C:\Projects\CheckersBot\bin\x64\Debug\net9.0\wwwroot\index.html
 C:\Projects\CheckersBot\bin\x64\Debug\net9.0\wwwroot\index.html.gz
 C:\Projects\CheckersBot\bin\x64\Debug\net9.0\CheckersBot.staticwebassets.runtime.json
-C:\Projects\CheckersBot\obj\x64\Debug\net9.0\compressed\kb1n4xq9n6-rltfv799vi.gz
+C:\Projects\CheckersBot\obj\x64\Debug\net9.0\compressed\kb1n4xq9n6-4dbyjn9db2.gz

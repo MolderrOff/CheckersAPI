@@ -122,7 +122,6 @@ public class CheckersController : ControllerBase
         return Ok(new {
             ok = count == 2,
             workers  = count
-            //, timestamp = DateTime.UtcNow
         });
     }
     private bool IsPdnValid(string pdn)

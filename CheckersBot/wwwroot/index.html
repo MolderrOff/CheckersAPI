@@ -1,126 +1,866 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Checkers Engine Client</title>
+    <title>Checkers Engine Full Terminal</title>
     <style>
+        :root {
+            --bg: #0c0c0c;
+            --card: #1e1e1e;
+            --accent: #007acc;
+            --text: #cccccc;
+        }
+
         body {
-            font-family: sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
+            font-family: 'Consolas', monospace;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .piece.selected-piece {
+            filter: brightness(1.5) drop-shadow(0 0 10px #ffeb3b);
+            transform: scale(1.1);
+            border: 2px solid #ffeb3b;
+            z-index: 10;
+        }
+
+        .edit-btn {
+            transition: all 0.3s ease;
+        }
+
+            .edit-btn:disabled {
+                filter: grayscale(1);
+                opacity: 0.5;
+            }
+
+        /* Дополнительно: курсор-указатель для шашек в режиме хода */
+        .cell.dark .piece {
+            cursor: pointer;
+        }
+
+        .left-panel {
+            width: 450px;
             padding: 20px;
-            line-height: 1.6;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            overflow-y: auto;
         }
 
-        textarea {
-            width: 100%;
-            height: 60px;
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            border: 5px solid #333;
+            background: #333;
         }
 
-        .box {
-            border: 1px solid #ccc;
-            padding: 15px;
-            border-radius: 8px;
-            background: #f9f9f9;
+        .cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .dark {
+            background: #4d4d4d;
+        }
+
+        .light {
+            background: #dcdcdc;
+        }
+
+        .piece {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            z-index: 2;
+            border: 2px solid rgba(0,0,0,0.2);
+        }
+
+        .p-white {
+            background: #fff;
+        }
+
+        .p-black {
+            background: #222;
+        }
+
+        .cell-id {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 8px;
+            opacity: 0.4;
+            color: #fff;
+        }
+
+        .right-panel {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 4px;
             margin-bottom: 20px;
         }
 
+        h2 {
+            color: #007acc;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            font-size: 1.2em;
+            margin-top: 0;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+            .input-group label {
+                width: 220px;
+                color: #9cdcfe;
+                font-size: 0.9em;
+            }
+
+        input, select, textarea {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #ce9178;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            flex: 1;
+        }
+
+        textarea {
+            height: 45px;
+        }
+
+        .btn-container {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+
         button {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            background: #3e3e42;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px 15px;
             cursor: pointer;
             font-weight: bold;
         }
 
             button:hover {
-                background: #218838;
+                background: #007acc;
+            }
+
+            button:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
             }
 
         pre {
-            background: #333;
-            color: #fff;
-            padding: 10px;
-            overflow-x: auto;
+            background: #000;
+            padding: 15px;
             border-radius: 4px;
+            overflow-x: auto;
+            color: #d4d4d4;
+            border: 1px solid #222;
         }
 
-        .label {
+        .header {
             font-weight: bold;
+            color: #fff;
+            margin-top: 15px;
             display: block;
-            margin-top: 10px;
-        }
-
-        .status {
-            font-size: 0.8em;
-            color: #666;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
             margin-bottom: 10px;
         }
+
+        .green {
+            color: #6a9955;
+        }
+
+        .yellow {
+            color: #dcdcaa;
+        }
+
+        .red {
+            color: #f44747;
+        }
+
+        .selected {
+            outline: 4px solid #ffeb3b !important;
+            outline-offset: -4px;
+            background-color: rgba(255, 235, 59, 0.2) !important;
+        }
+
+        .piece.king {
+            border: 4px solid #ffd700; /* Золотая кайма для дамки */
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+            .piece.king::after {
+                content: "👑";
+                display: block;
+                text-align: center;
+                font-size: 18px;
+                line-height: 32px;
+            }
     </style>
 </head>
 <body>
-    <h2>Checkers Engine Test Client</h2>
+    <div class="left-panel">
+        <h2 style="color:#4ec9b0">VISUAL BOARD</h2>
+        <div id="board" class="board"></div>
 
-    <div class="box">
+        <div style="margin-top:20px; width: 100%;">
+            <!-- ОДНА ГЛАВНАЯ КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ -->
+            <button id="toggleMode" onclick="toggleInterface()" style="width:100%; background:#007acc; padding: 15px; margin-bottom: 10px; font-size: 1.1em; border: none; color: white; border-radius: 4px; cursor: pointer;">
+                🛠️ Switch to EDIT Mode
+            </button>
 
-        <div class="status" id="serverStatus">Connecting to engine...</div>
+            <span class="header">EDITOR (Click to place)</span>
+            <div style="display: flex; gap: 10px; margin: 10px 0;">
+                <!-- Добавляем disabled изначально -->
+                <button onclick="setEditMode('B')" id="editB" class="edit-btn" style="flex: 1;" disabled>Set Black</button>
+                <button onclick="setEditMode('W')" id="editW" class="edit-btn" style="flex: 1;" disabled>Set White</button>
+                <button onclick="setEditMode('EMPTY')" id="editEmpty" class="edit-btn" style="flex: 1;" disabled>Eraser</button>
+            </div>
 
-        <label class="label">Position (PDN):</label>
-        <textarea id="pdn">W:W25,28,29,30:B4,9,11</textarea>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="resetBoard()" id="btnReset" class="edit-btn" style="flex: 2;" disabled>Standard Start</button>
+                <button onclick="clearBoard()" id="btnClear" class="edit-btn" style="flex: 1; background: #991b1b; color: white; border: none;" disabled>Clear All</button>
+            </div>
 
-        <label class="label">Level:</label>
-        <select id="level">
-            <option value="weak">Weak</option>
-            <option value="medium" selected>Medium</option>
-            <option value="strong">Strong</option>
-        </select>
-
-        <p><button onclick="getSuggest()">Get Move Suggestion</button></p>
+            <div id="moveStatus" style="margin-top:15px; font-weight:bold; color:#4ec9b0; text-align:center;">Move Mode Active</div>
+        </div>
     </div>
 
-    <div id="resultBox" class="box" style="display:none">
-        <label class="label">Response:</label>
-        <pre id="response"></pre>
+    <div class="right-panel">
+        <h2>--- CHECKERS ENGINE WEB INTERFACE ---</h2>
+        <div class="card">
+            <div class="input-group"><label>Server Address:</label><input type="text" id="baseUrl"></div>
+
+            <div style="margin-top:15px; border: 1px solid #444; padding: 10px; border-radius: 4px;">
+                <span class="header">CURRENT TURN</span>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="turnW" onclick="setTurn('W')" style="flex: 1; background: #fff; color: #000; font-weight: bold; border: 2px solid #4ec9b0;">WHITE TURN</button>
+                    <button id="turnB" onclick="setTurn('B')" style="flex: 1; background: #333; color: #fff; font-weight: bold; border: 2px solid transparent;">BLACK TURN</button>
+                </div>
+                <div id="turnMessage" style="margin-top: 5px; font-size: 0.9em; text-align: center; color: #eab308;">Waiting for move...</div>
+            </div>
+
+            <div style="margin-top:20px; border: 1px solid #444; padding: 15px; border-radius: 4px; background: #1a1a1a;">
+                <span class="header">SYSTEM & VALIDATION</span>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="checkHealth()" style="flex: 1; background: #22c55e; color: black; font-weight: bold;">Run HealthCheck</button>
+                    <button onclick="validateMove()" style="flex: 1; background: #eab308; color: black; font-weight: bold;">Validate Move</button>
+                </div>
+
+                <div class="input-group" style="margin-top:10px;">
+                    <label>Move to Validate (e.g. 11-15):</label>
+                    <input type="text" id="moveInput" placeholder="11-15">
+                </div>
+            </div>
+
+            <div style="margin-top:20px; border: 1px solid #444; padding: 15px; border-radius: 4px;">
+                <span class="header">MOVE SUGGESTION</span>
+                <div class="input-group">
+                    <label>Position (PDN):</label>
+                    <textarea id="pdnSuggest" style="width: 100%; height: 60px; background: #1a1a1a; color: #4ec9b0; border: 1px solid #444; font-family: monospace; padding: 5px;"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Level:</label>
+                    <select id="level" style="width: 100%; padding: 5px; background: #333; color: white; border: 1px solid #444;">
+                        <option value="weak">Weak</option>
+                        <option value="medium">Medium</option>
+                        <option value="strong">Strong</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 0.8em;">
+                    <input type="text" id="gameId" value="checkers-8x8" title="gameId">
+                    <input type="number" id="maxDepth" value="12" title="maxDepth">
+                    <input type="number" id="hardTime" value="1200" title="hardTimeMs">
+                </div>
+
+                <textarea id="pdnSuggest" style="display:none;"></textarea>
+
+                <button onclick="applyPDN()" style="background:#4ec9b0; width:100%; margin-top:5px; color: black; font-weight: bold;">
+                    Apply to Board
+                </button>
+
+                <div style="margin-top:20px; border: 1px solid #444; padding: 15px; border-radius: 4px; border-left: 4px solid #007acc;">
+                    <span class="header" style="color: #007acc;">JSON REQUEST (Sent to Engine)</span>
+                    <!-- Блок для отображения исходящего JSON -->
+                    <pre id="jsonRequest" style="background:#000; color:#9cdcfe; padding:10px; border-radius:4px; overflow:auto; max-height:150px; font-size:12px; border:1px solid #333; margin-top:10px;">{}</pre>
+                </div>
+
+                <!-- Оставил одну кнопку Get Best Move -->
+                <button onclick="sendRequest('suggest')" style="background:#007acc; width:100%; margin-top:10px;">
+                    Get Best Move
+                </button>
+            </div>
+
+            <div id="consoleLog" style="margin-top:15px; background:black; color:#4ec9b0; padding:10px; font-family:monospace; font-size:12px; border-radius:4px; height:150px; overflow-y:auto; border:1px solid #333;">
+                > System ready...
+            </div>
+            <div>
+                <div style="margin-top:20px; border: 1px solid #444; padding: 15px; border-radius: 4px;">
+                    <span class="header">JSON RESPONSE</span>
+                    <pre id="jsonOutput" style="background:#000; color:#dcdcaa; padding:10px; border-radius:4px; overflow:auto; max-height:300px; font-size:12px; border:1px solid #333; margin-top:10px;">{}</pre>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // 1. Состояние игры
+        let gameState = {
+            W: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+            B: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            WK: [], BK: [],
+            turn: 'W'
+        };
+        document.getElementById('baseUrl').value = window.location.origin;
 
-        document.getElementById('serverStatus').textContent = "Target Server: " + window.location.origin;
+        let editMode = 'MOVE';
+        let selectedId = null;
+        let isEditModeActive = false;
+        let currentTurn = 'W'; // По умолчанию ход белых
+        gameState.turn = 'W';
 
-        async function getSuggest() {
-            const baseUrl = window.location.origin;
+        function setTurn(side) {
+            // 1. ОБЯЗАТЕЛЬНО обновляем оба значения
+            gameState.turn = side;  // Для логики в handleCellClick
+            currentTurn = side;     // Для визуального контроля
 
-            const pdn = document.getElementById('pdn').value;
-            const level = document.getElementById('level').value;
-            const resDisplay = document.getElementById('response');
-            const resBox = document.getElementById('resultBox');
+            // 2. Визуальное переключение кнопок
+            const btnW = document.getElementById('turnW');
+            const btnB = document.getElementById('turnB');
+            const msg = document.getElementById('turnMessage');
 
-            resBox.style.display = 'block';
-            resDisplay.textContent = "Processing move...";
+            if (side === 'W') {
+                btnW.style.background = "#fff"; btnW.style.color = "#000";
+                btnB.style.background = "#333"; btnB.style.color = "#fff";
+                msg.innerText = "Current turn: WHITE";
+            } else {
+                btnB.style.background = "#fff"; btnB.style.color = "#000";
+                btnW.style.background = "#333"; btnW.style.color = "#fff";
+                msg.innerText = "Current turn: BLACK";
+            }
 
-            const payload = {
-                gameId: "checkers-8x8",
-                state: { notation: "PDN", position: pdn },
-                level: level,
-                limits: { maxDepth: 12, softTimeMs: 250, hardTimeMs: 1200 }
+            // Сбрасываем выделение, чтобы не было глюков при смене хода
+            selectedId = null;
+            renderBoard();
+
+            writeToLog(`The move is switched manually to: ${side === 'W' ? 'WHITE' : 'BLACK'}`);
+        }
+
+        function toggleInterface() {
+            isEditModeActive = !isEditModeActive;
+            const mainBtn = document.getElementById('toggleMode');
+            const editBtns = document.querySelectorAll('.edit-btn');
+            const status = document.getElementById('moveStatus');
+
+            if (isEditModeActive) {
+                editMode = 'W'; // Включаем режим редактора (кисть "Белые")
+                mainBtn.innerText = "✅ Finish & Play Mode";
+                mainBtn.style.background = "#28a745";
+                editBtns.forEach(btn => { btn.disabled = false; btn.style.opacity = "1"; });
+                status.innerText = "Editor Active: Placing White";
+            } else {
+                editMode = 'MOVE'; // Возвращаем режим игры
+                mainBtn.innerText = "🛠️ Switch to EDIT Mode";
+                mainBtn.style.background = "#007acc";
+                editBtns.forEach(btn => { btn.disabled = true; btn.style.opacity = "0.5"; });
+                status.innerText = "Move Mode Active";
+                selectedId = null;
+            }
+            renderBoard();
+        }
+        async function checkHealth() {
+            const baseUrl = document.getElementById('baseUrl').value.replace(/\/$/, "");
+            try {
+                const response = await fetch(`${baseUrl}/healthz`);
+                const data = await response.text();
+                writeToLog(`Status: ${response.status} | Data: ${data}`, "#22c55e");
+            } catch (ex) {
+                handleConnectionError(ex);
+            }
+        }
+
+
+        function setEditMode(mode) {
+            if (!isEditModeActive) return;
+            editMode = mode;
+            const status = document.getElementById('moveStatus');
+            status.innerText = (mode === 'EMPTY') ? "Editor: Eraser" : `Editor: Placing ${mode === 'W' ? 'White' : 'Black'}`;
+        }
+
+
+        function applyPDN() {
+            const pdn = document.getElementById('pdnSuggest').value.trim();
+            if (!pdn) return;
+
+            // Очищаем текущее состояние
+            gameState.W = []; gameState.WK = [];
+            gameState.B = []; gameState.BK = [];
+
+            // Определяем чей ход (W или B в начале строки)
+            const turnPart = pdn.split(':')[0].toUpperCase();
+            gameState.turn = (turnPart === 'B') ? 'B' : 'W';
+
+            // Разбиваем части с белыми и черными фигурами
+            const parts = pdn.split(':');
+            parts.forEach(part => {
+                if (part.startsWith('W')) {
+                    // Обработка белых: W1,2,K3 (K - дамка)
+                    parsePieces(part.substring(1), gameState.W, gameState.WK);
+                } else if (part.startsWith('B')) {
+                    // Обработка черных: B31,32,K30
+                    parsePieces(part.substring(1), gameState.B, gameState.BK);
+                }
+            });
+
+            renderBoard();
+            alert("Position updated! Turn: " + gameState.turn);
+        }
+
+        function parsePieces(str, normalArr, kingArr) {
+            const items = str.split(',');
+            items.forEach(item => {
+                const val = item.trim().toUpperCase();
+                if (val.startsWith('K')) {
+                    const num = parseInt(val.substring(1));
+                    if (!isNaN(num)) kingArr.push(num);
+                } else {
+                    const num = parseInt(val);
+                    if (!isNaN(num)) normalArr.push(num);
+                }
+            });
+        }
+
+        // 2. Отрисовка доски
+        function renderBoard() {
+            const board = document.getElementById('board');
+            if (!board) return;
+            board.innerHTML = '';
+            let cellId = 1;
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    const isDark = (r + c) % 2 !== 0;
+                    cell.className = `cell ${isDark ? 'dark' : 'light'}`;
+
+                    if (isDark) {
+                        const id = cellId++;
+                        cell.dataset.id = id;
+                        cell.innerHTML = `<span class="cell-id">${id}</span>`;
+
+                        if (gameState.W.includes(id)) cell.innerHTML += '<div class="piece p-white"></div>';
+                        if (gameState.WK.includes(id)) cell.innerHTML += '<div class="piece p-white king"></div>';
+                        if (gameState.B.includes(id)) cell.innerHTML += '<div class="piece p-black"></div>';
+                        if (gameState.BK.includes(id)) cell.innerHTML += '<div class="piece p-black king"></div>';
+
+                        if (selectedId === id) cell.classList.add('selected');
+
+                        cell.onclick = () => handleCellClick(id);
+                    }
+                    board.appendChild(cell);
+                }
+            }
+            updatePDN();
+        }
+        function handleConnectionError(ex) {
+            const msg = ex.message.toLowerCase();
+            if (msg.includes("refused") || msg.includes("отверг")) {
+                writeToLog("[!] Databases are warming up, please wait...", "#eab308");
+            } else {
+                writeToLog(`CRITICAL ERROR: ${ex.message}`, "#991b1b");
+            }
+        }
+
+        function handleCellClick(id) {
+            if (editMode !== 'MOVE') {
+                // Режим редактора
+                [gameState.W, gameState.WK, gameState.B, gameState.BK].forEach(arr => {
+                    const idx = arr.indexOf(id);
+                    if (idx !== -1) arr.splice(idx, 1);
+                });
+                if (editMode === 'W') gameState.W.push(id);
+                if (editMode === 'B') gameState.B.push(id);
+            } else {
+                // Режим хода (MOVE)
+                if (selectedId === null) {
+                    const isWhitePiece = gameState.W.includes(id) || gameState.WK.includes(id);
+                    const isBlackPiece = gameState.B.includes(id) || gameState.BK.includes(id);
+
+                    if (isWhitePiece || isBlackPiece) {
+                        const clickedColor = isWhitePiece ? 'W' : 'B';
+
+                        // Сравниваем цвет фигуры с тем, чей сейчас ход в системе
+                        if (clickedColor !== gameState.turn) {
+                            const colorName = gameState.turn === 'W' ? "WHITE" : "BLACK";
+                            const errorMessage = `The move is impossible! Now it's time ${colorName}`;
+
+
+                            // Выводим в лог
+                            writeToLog(errorMessage, "#ef4444");
+
+                            // ВЫВОДИМ ALERT (всплывающее окно)
+                            alert(errorMessage);
+
+                            return;
+                        }
+                        selectedId = id;
+                    }
+                } else {
+                    if (selectedId !== id) {
+                        executeMove(selectedId, id);
+                        // После executeMove ход переключится сам внутри той функции
+                    }
+                    selectedId = null;
+                }
+            }
+            renderBoard();
+        }
+
+        // 3. Обработка кликов
+        function handlePlayClick() {
+            const playBtn = document.getElementById('editMove');
+            const editBtns = document.querySelectorAll('.edit-btn');
+            const status = document.getElementById('moveStatus');
+
+            isEditModeActive = !isEditModeActive; // Переключаем режим
+
+            if (isEditModeActive) {
+                // --- РЕЖИМ РЕДАКТОРА ВКЛЮЧЕН ---
+                editMode = 'W'; // Ставим кисть "Белые" по умолчанию
+                playBtn.innerText = "✅ Finish & Play Mode";
+                playBtn.style.background = "#28a745"; // Зеленый цвет
+
+                // Активируем нижние кнопки
+                editBtns.forEach(btn => { btn.disabled = false; btn.style.opacity = "1"; });
+                status.innerText = "Editor Active: Placing White";
+            } else {
+                // --- РЕЖИМ ИГРЫ ВКЛЮЧЕН ---
+                editMode = 'MOVE'; // ВАЖНО: возвращаем возможность ходить!
+                playBtn.innerText = "🕹️ Switch to Edit Mode";
+                playBtn.style.background = "#007acc"; // Синий цвет
+
+                // Блокируем нижние кнопки
+                editBtns.forEach(btn => { btn.disabled = true; btn.style.opacity = "0.5"; });
+                status.innerText = "Move Mode Active";
+                selectedId = null; // Сбрасываем выделение шашки
+            }
+            renderBoard();
+        }
+
+        function setEditTool(mode) {
+            if (!isEditModeActive) return; // Не меняем инструмент, если редактор закрыт
+            editMode = mode;
+            document.getElementById('moveStatus').innerText = `Editor: ${mode}`;
+        }
+
+        // 4. Логика перемещения (Ваша исправленная функция)
+        function executeMove(from, to, isAI = false) {
+            const diff = Math.abs(from - to);
+            const removePieceAt = (pos) => {
+                gameState.W = gameState.W.filter(p => p !== pos);
+                gameState.WK = gameState.WK.filter(p => p !== pos);
+                gameState.B = gameState.B.filter(p => p !== pos);
+                gameState.BK = gameState.BK.filter(p => p !== pos);
             };
 
+            // --- ЛОГИКА ВЗЯТИЯ ---
+            if (diff > 5 && (diff === 7 || diff === 9)) {
+                const sum = (from + to) / 2;
+                const isHighRoundRow = (from >= 1 && from <= 4) || (from >= 9 && from <= 12) ||
+                    (from >= 17 && from <= 20) || (from >= 25 && from <= 28);
+                let mid = isHighRoundRow ? Math.ceil(sum) : Math.floor(sum);
+                removePieceAt(mid);
+            }
+
+            const wasKing = gameState.WK.includes(from) || gameState.BK.includes(from);
+            removePieceAt(from);
+
+            // --- ОБНОВЛЕНИЕ ПОЗИЦИИ И ПЕРЕКЛЮЧЕНИЕ ХОДА ---
+            if (gameState.turn === 'W') {
+                // Ставим белую фигуру (дамку или простую)
+                if ((to >= 1 && to <= 4) || wasKing) gameState.WK.push(to);
+                else gameState.W.push(to);
+
+                // Переключаем на черных
+                gameState.turn = 'B';
+                setTurn('B'); // ВЫЗОВ ВАШЕЙ ФУНКЦИИ ОБНОВЛЕНИЯ КНОПОК
+            } else {
+                // Ставим черную фигуру
+                if ((to >= 29 && to <= 32) || wasKing) gameState.BK.push(to);
+                else gameState.B.push(to);
+
+                // Переключаем на белых
+                gameState.turn = 'W';
+                setTurn('W'); // ВЫЗОВ ВАШЕЙ ФУНКЦИИ ОБНОВЛЕНИЯ КНОПОК
+            }
+
+            renderBoard();
+
+            // Автоматический запрос хода от движка (если это не сам ИИ сходил)
+            if (!isAI) {
+                writeToLog(`The move is made: ${from}-${to}. Waiting for engine response...`, "#4ec9b0");
+                setTimeout(() => sendRequest('suggest'), 500);
+            }
+        }
+
+        // 5. Вспомогательные функции
+        function updatePDN() {
+            const wStr = [...gameState.W, ...gameState.WK.map(p => "K" + p)].sort((a, b) => parseInt(a.toString().replace('K', '')) - parseInt(b.toString().replace('K', ''))).join(',');
+            const bStr = [...gameState.B, ...gameState.BK.map(p => "K" + p)].sort((a, b) => parseInt(a.toString().replace('K', '')) - parseInt(b.toString().replace('K', ''))).join(',');
+            const pdn = `${gameState.turn}:W${wStr}:B${bStr}`;
+            const el = document.getElementById('pdnSuggest');
+            if (el) el.value = pdn;
+        }
+
+        function setEditMode(mode) {
+            const playBtn = document.getElementById('editMove');
+            const editBtns = document.querySelectorAll('.edit-btn'); // Добавьте этот класс кнопкам B, W, Empty, Reset, Clear
+            const status = document.getElementById('moveStatus');
+
+            if (mode === 'MOVE') {
+                // ВКЛЮЧАЕМ РЕДАКТОР (нажали на большую синюю кнопку)
+                isEditActive = true;
+                editMode = 'W'; // По умолчанию ставим режим "Ставить белых"
+
+                playBtn.disabled = true;
+                playBtn.style.opacity = "0.5";
+                playBtn.innerText = "🛠️ EDITOR ACTIVE";
+
+                // Активируем ВСЕ нижние кнопки
+                editBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                });
+
+                status.innerText = "Editor Active: Select tool below";
+            } else {
+                // ВЫБОР ИНСТРУМЕНТА ВНУТРИ РЕДАКТОРА (B, W, или EMPTY)
+                // Мы НЕ выключаем редактор, просто меняем кисть
+                editMode = mode;
+                status.innerText = `Editor: ${mode}`;
+
+                // Кнопку Play делаем активной, чтобы можно было ВЫЙТИ из редактора
+                playBtn.disabled = false;
+                playBtn.style.opacity = "1";
+                playBtn.innerText = "✅ Finish & Play";
+            }
+        }
+
+        function resetBoard() {
+            gameState = { W: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32], B: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], WK: [], BK: [], turn: 'W' };
+            renderBoard();
+        }
+
+        function clearBoard() {
+            gameState.W = []; gameState.WK = []; gameState.B = []; gameState.BK = [];
+            renderBoard();
+        }
+
+        async function sendRequest(type) {
+            const baseUrl = document.getElementById('baseUrl').value.replace(/\/$/, "");
+            const resLog = document.getElementById('responseLog');
+            if (resLog) resLog.innerText = "Thinking...";
+
+            // Данные для валидации берем из инпута moveInput, если это не suggest
+            const moveValue = document.getElementById('moveInput') ? document.getElementById('moveInput').value : "";
+
+            // 1. Формируем универсальный объект запроса
+            const requestPayload = {
+                gameId: document.getElementById('gameId').value,
+                state: {
+                    position: document.getElementById('pdnSuggest').value,
+                    notation: "PDN"
+                },
+                // Добавляем поле move только если мы нажимаем Validate
+                move: type === 'validate' ? moveValue : undefined,
+                level: document.getElementById('level').value,
+                limits: {
+                    maxDepth: parseInt(document.getElementById('maxDepth').value),
+                    hardTimeMs: parseInt(document.getElementById('hardTime').value)
+                }
+            };
+
+            // 2. ОТОБРАЖАЕМ REQUEST (Тот самый пустяк)
+            const reqDisplay = document.getElementById('jsonRequest');
+            if (reqDisplay) reqDisplay.textContent = JSON.stringify(requestPayload, null, 4);
+
+            try {
+                // ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ type В АДРЕСЕ (это оживит кнопку Validate)
+                const res = await fetch(`${baseUrl}/v1/move/${type}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                });
+
+                const data = await res.json();
+
+                // ВЫВОД RESPONSE
+                document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 4);
+
+                // Обработка хода (только для suggest)
+                if (type === 'suggest') {
+                    const move = data.bestMove || data.move;
+                    if (move) {
+                        if (resLog) resLog.innerText = "Engine: " + move;
+                        const parts = move.split(/[x-]/).map(Number);
+                        for (let i = 0; i < parts.length - 1; i++) {
+                            executeMove(parts[i], parts[i + 1], true);
+                        }
+                    }
+                } else if (type === 'validate') {
+                    // Логика для валидации
+                    const isValid = data.isValid || data.valid;
+                    if (resLog) resLog.innerText = isValid ? "Move is VALID" : "Move is INVALID";
+                    if (!isValid) alert("Ход невозможен!");
+                }
+
+            } catch (e) {
+                if (resLog) resLog.innerText = "Error: " + e.message;
+            }
+        }
+
+        function addToLog(msg) {
+            const log = document.getElementById('consoleLog');
+            log.innerHTML += `<div>> ${msg}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function sendSuggestRequest() {
+            const baseUrl = document.getElementById('baseUrl').value.replace(/\/$/, "");
+            writeToLog(`Target: ${baseUrl}/v1/move/suggest`, "#007acc");
+            const requestData = {
+                gameId: document.getElementById('gameId').value,
+                state: {
+                    position: document.getElementById('pdnSuggest').value,
+                    notation: "PDN"
+                },
+                level: document.getElementById('level').value,
+                limits: {
+                    maxDepth: parseInt(document.getElementById('maxDepth').value),
+                    softTimeMs: 250,
+                    hardTimeMs: parseInt(document.getElementById('hardTime').value)
+                }
+            };
+
+            writeToLog("Sending suggest request...", "#007acc");
             try {
                 const response = await fetch(`${baseUrl}/v1/move/suggest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(requestData)
                 });
 
-                const data = await response.json();
-                resDisplay.textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                resDisplay.textContent = "Error: " + error.message +
-                    "\n\nMake sure the server is running and CORS is enabled in Program.cs!";
+                const result = await response.json();
+                writeToLog("SUCCESS! Check console for full JSON", "#22c55e");
+                console.log("Full JSON Response:", result);
+            } catch (ex) {
+                handleConnectionError(ex);
             }
         }
+
+
+        async function validateMove() {
+            // 1. Берем адрес напрямую из инпута, как в рабочем коде suggest
+            const baseUrlInput = document.getElementById('baseUrl').value.replace(/\/$/, "");
+            const url = `${baseUrlInput}/v1/move/validate`; // Собираем полный путь
+
+            const move = document.getElementById('moveInput').value;
+
+            // Формируем PDN (используем gameState.turn или currentTurn - проверь как у тебя)
+            const pdnRaw = document.getElementById('pdnSuggest').value;
+            const cleanPdn = pdnRaw.includes(':') ? pdnRaw.split(':').slice(1).join(':') : pdnRaw;
+
+            // ВАЖНО: убедись, что переменная с текущим ходом называется именно так
+            const turn = (typeof currentTurn !== 'undefined') ? currentTurn : gameState.turn;
+            const finalPdn = `${turn}:${cleanPdn}`;
+
+            const requestData = {
+                gameId: document.getElementById('gameId').value,
+                position: finalPdn,
+                notation: "PDN",
+                move: move
+            };
+
+            // ОТОБРАЖАЕМ REQUEST
+            const reqDisplay = document.getElementById('jsonRequest');
+            if (reqDisplay) reqDisplay.textContent = JSON.stringify(requestData, null, 4);
+
+            try {
+                // Шлем запрос по ПРАВИЛЬНОМУ адресу url
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                // ОТОБРАЖАЕМ RESPONSE
+                const resDisplay = document.getElementById('jsonOutput');
+                if (resDisplay) resDisplay.textContent = JSON.stringify(result, null, 4);
+
+                if (result.legal) {
+                    writeToLog(`Move ${move} is LEGAL`, "#22c55e");
+                    // Переключаем ход (вызывай свою функцию setTurn или меняй переменную)
+                    //if (typeof setTurn === 'function') setTurn(turn === 'W' ? 'B' : 'W');
+                    alert("Ход возможен!"); // Просто подтверждаем
+                } else {
+                    const reason = result.reason || "Wrong turn";
+                    writeToLog(`ILLEGAL: ${reason}`, "#ef4444");
+                    alert(`Ход невозможен! ${reason}`);
+                }
+            } catch (ex) {
+                console.error("Ошибка при валидации:", ex);
+                alert("Не удалось связаться с сервером. Проверь Server Address!");
+            }
+        }
+
+        function writeToLog(text, color = "#4ec9b0") {
+            const logEl = document.getElementById('consoleLog');
+            logEl.innerHTML += `<div style="color:${color}">> ${text}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // ЗАПУСК
+        gameState.W = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+        gameState.B = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        window.onload = renderBoard;
+        //window.onload = () => {
+        //    renderBoard();
+        //};
+        renderBoard();
     </script>
 </body>
 </html>
